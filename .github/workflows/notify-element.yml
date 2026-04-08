@@ -1,11 +1,10 @@
 # =============================================================================
 # WORKFLOW REUTILIZÁVEL — Notificações para Element (Matrix)
 # =============================================================================
-# Coloque este arquivo no repo central, ex: sua-org/devops
+# Coloque este arquivo em um repo central, ex: sua-org/devops
 # Caminho: .github/workflows/notify-element.yml
 #
-# Os secrets ficam como Organization Secrets com acesso restrito
-# apenas a este repo (devops). Os repos callers não têm acesso.
+# Nos seus 3 repos, basta chamar este workflow (veja caller-example.yml)
 # =============================================================================
 
 name: Notify Element
@@ -14,13 +13,15 @@ on:
   workflow_call:
     inputs:
       event_type:
-        description: "Tipo do evento"
+        description: "Tipo do evento (pr_opened, review_requested, review_approved, review_changes_requested, pr_merged, pr_closed, pr_commented, push_main)"
         required: true
         type: string
       repo_name:
+        description: "Nome do repositório"
         required: true
         type: string
       actor:
+        description: "Usuário que disparou o evento"
         required: true
         type: string
       pr_title:
@@ -55,8 +56,13 @@ on:
         required: false
         type: string
         default: ""
-    # Sem bloco "secrets:" aqui — as credenciais vêm dos
-    # Organization Secrets acessíveis apenas a este repo.
+    secrets:
+      MATRIX_HOMESERVER:
+        required: true
+      MATRIX_ACCESS_TOKEN:
+        required: true
+      MATRIX_ROOM_ID:
+        required: true
 
 jobs:
   send-notification:
@@ -75,11 +81,13 @@ jobs:
           BRANCH:          ${{ inputs.branch }}
           COMMIT_MESSAGE:  ${{ inputs.commit_message }}
           COMMIT_URL:      ${{ inputs.commit_url }}
-          # Secrets lidos diretamente do repo central (devops)
           MATRIX_HOMESERVER:    ${{ secrets.MATRIX_HOMESERVER }}
           MATRIX_ACCESS_TOKEN:  ${{ secrets.MATRIX_ACCESS_TOKEN }}
           MATRIX_ROOM_ID:       ${{ secrets.MATRIX_ROOM_ID }}
         run: |
+          # ------------------------------------------------------------------
+          # Monta a mensagem de acordo com o tipo de evento
+          # ------------------------------------------------------------------
           case "$EVENT_TYPE" in
             pr_opened)
               EMOJI="🟢"
@@ -128,6 +136,12 @@ jobs:
               ;;
           esac
 
+          # ------------------------------------------------------------------
+          # Monta o payload Matrix (formatted_body = HTML, body = texto plano)
+          # ------------------------------------------------------------------
+          PLAIN_MSG="${EMOJI} [${REPO_NAME}] ${TITLE}"
+
+          # Converte markdown simples para HTML (negrito e quebras de linha)
           HTML_BODY=$(echo "$BODY" \
             | sed 's/\*\*\(.*\)\*\*/<strong>\1<\/strong>/g' \
             | sed 's/`\([^`]*\)`/<code>\1<\/code>/g' \
@@ -145,8 +159,14 @@ jobs:
           EOF
           )
 
+          # ------------------------------------------------------------------
+          # Gera transaction ID único para idempotência
+          # ------------------------------------------------------------------
           TXN_ID="gh-$(date +%s%N)-${GITHUB_RUN_ID}"
 
+          # ------------------------------------------------------------------
+          # Envia para o room Matrix via API
+          # ------------------------------------------------------------------
           HTTP_STATUS=$(curl -s -o /tmp/matrix_response.json -w "%{http_code}" \
             -X PUT \
             -H "Authorization: Bearer ${MATRIX_ACCESS_TOKEN}" \
