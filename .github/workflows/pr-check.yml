@@ -23,4 +23,8 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           REPOS: "Fernandafmsf/laravel-ci-lab"
+          MATRIX_HOMESERVER: ${{ secrets.MATRIX_HOMESERVER }}
+          MATRIX_ACCESS_TOKEN: ${{ secrets.MATRIX_ACCESS_TOKEN }}
+          MATRIX_ROOM_ID: ${{ secrets.MATRIX_ROOM_ID }}
+
         #   ELEMENT_WEBHOOK_URL: ${{ secrets.ELEMENT_WEBHOOK_URL }}
