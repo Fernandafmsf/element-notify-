@@ -1,0 +1,26 @@
+name: PR Notifier
+
+on:
+  schedule:
+    - cron: "0 12 * * *" # 09:00 Brasil (UTC-3)
+  workflow_dispatch:
+
+jobs:
+  check-prs:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Run script
+        run: node scripts/check-prs.js
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          REPOS: "Fernandafmsf/laravel-ci-lab"
+        #   ELEMENT_WEBHOOK_URL: ${{ secrets.ELEMENT_WEBHOOK_URL }}
