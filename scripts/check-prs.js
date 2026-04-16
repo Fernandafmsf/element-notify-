@@ -18,7 +18,7 @@ async function fetchPRs(repo) {
   return res.json();
 }
 
-// 🔍 Buscar reviews (pra saber se teve feedback)
+// Buscar reviews 
 async function fetchReviews(repo, prNumber) {
   const res = await fetch(`https://api.github.com/repos/${repo}/pulls/${prNumber}/reviews`, {
     headers: {
@@ -29,7 +29,7 @@ async function fetchReviews(repo, prNumber) {
   return res.json();
 }
 
-// 🧠 Regras de status
+// Regras de status
 function getStatus(pr, reviews) {
   const now = new Date();
   const createdAt = new Date(pr.created_at);
@@ -52,7 +52,7 @@ function getStatus(pr, reviews) {
   return `⏳ Sem reviewers`;
 }
 
-// 🧱 Monta mensagem
+// Monta mensagem
 async function buildMessage() {
   let text = `📢 Resumo diário de PRs\n\n`;
   let html = `<h3>📢 Resumo diário de PRs</h3>`;
@@ -95,9 +95,9 @@ async function buildMessage() {
   return { text, html };
 }
 
-// 🚀 Envio Matrix
+// Envio Matrix
 async function sendToMatrix(text, html) {
-  const txnId = `gh-${Date.now()}`; //Entender melhor 
+  const txnId = `gh-${Date.now()}`; 
 
   const url = `${MATRIX_HOMESERVER}/_matrix/client/v3/rooms/${MATRIX_ROOM_ID}/send/m.room.message/${txnId}`;
 
@@ -125,7 +125,7 @@ async function sendToMatrix(text, html) {
   console.log("✅ Mensagem enviada com sucesso!");
 }
 
-// 🧠 MAIN
+// MAIN
 async function main() {
   try {
     const { text, html } = await buildMessage();
